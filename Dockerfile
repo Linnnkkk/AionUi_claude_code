@@ -13,6 +13,17 @@ USER root
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Shanghai
 ENV DISPLAY=:99
+ENV CHROME_BIN=/usr/bin/google-chrome
+ENV CHROME_PROFILE_DIR=/home/coder/.chrome
+# AionUi 配置
+ENV AIONUI_PORT=25808
+# VNC 配置
+ENV VNC_PORT=5900
+ENV NOVNC_PORT=4000
+ENV VNC_GEOMETRY=1280x720
+ENV VNC_DEPTH=24
+# Chrome CDP 配置
+ENV CDP_PORT=9222
 
 # 设置时区
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
