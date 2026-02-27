@@ -1,0 +1,89 @@
+# docker-compose.yml for OpenClaw v4.3
+# 版本: 4.3
+# 支持: 多用户部署、环境变量配置、端口自定义
+# 更新: 移除本地 Chrome 依赖，使用在线安装
+
+version: '3.8'
+
+services:
+  code-server-aionui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${IMAGE_NAME}
+    container_name: ${CONTAINER_NAME:-code-server-aionui}
+
+    # === 端口映射 ===
+    # 格式：宿主机端口:容器端口
+    ports:
+      # Code-Server
+      - "${CODE_SERVER_PORT:-8080}:8080"
+      # AionUi WebUI (内部固定 25808，外部可配置)
+      - "${AIONUI_PORT:-25808}:25808"
+      # noVNC (Web VNC)
+      - "${NOVNC_PORT:-6080}:${NOVNC_PORT:-6080}"
+      # Chrome CDP (仅容器内部访问，不暴露到宿主机)
+      # - "${CDP_PORT:-9222}:${CDP_PORT:-9222}"
+
+    # === 环境变量 ===
+    environment:
+      # Code-Server 配置
+      - PASSWORD=${CODE_SERVER_PASSWORD}
+      - DOCKER_USER=${DOCKER_USER:-coder}
+      - TZ=${TZ:-Asia/Shanghai}
+      # VNC 配置
+      - DISPLAY=${DISPLAY:-:99}
+      - VNC_PORT=${VNC_PORT:-5900}
+      - NOVNC_PORT=${NOVNC_PORT:-6080}
+      - VNC_GEOMETRY=${VNC_GEOMETRY:-1280x720}
+      - VNC_DEPTH=${VNC_DEPTH:-24}
+
+      # AionUi 配置 (内部固定端口 25808)
+      - AIONUI_PORT=25808
+      - AIONUI_PASSWORD=${AIONUI_PASSWORD:-}
+      - AIONUI_USERNAME=${AIONUI_USERNAME:-admin}
+
+      # Chrome CDP 配置 (内部固定路径 /home/coder/.chrome，由 CODE_SERVER_HOME 挂载覆盖)
+      - CDP_PORT=${CDP_PORT:-9222}
+      - CHROME_PROFILE_DIR=/home/coder/.chrome
+
+      # Supervisor 配置
+      - HOME=/home/coder
+
+    # === 数据卷挂载 ===
+    volumes:
+      # Code-Server 工作目录
+      - ${CODE_SERVER_HOME}:/home/coder
+
+      # AionUi 数据目录（对话历史、设置、SQLite 数据库）
+      # - ${AIONUI_DATA_DIR:-/var/lib/aionui/data}:/home/coder/.aionui-data
+
+      # Chrome 用户数据目录（CDP 登录状态、cookies）
+      # - ${CHROME_PROFILE_DIR:-/var/lib/chrome/profile}:/home/coder/.chrome
+
+      # 额外挂载（可选）- 注意：不要使用空字符串，会导致 docker-compose 失败
+      # 如需额外挂载，请在运行时设置 EXTRA_MOUNTS 环境变量并取消下面的注释
+      # - ${EXTRA_MOUNTS}
+
+    # === 网络配置 ===
+    networks:
+      - openclaw-network
+
+    # === 重启策略 ===
+    restart: unless-stopped
+
+    # === 资源限制（可选）===
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 4G
+    #       cpus: '2'
+    #     reservations:
+    #       memory: 2G
+    #       cpus: '1'
+
+# === 网络配置 ===
+networks:
+  openclaw-network:
+    driver: bridge
+    name: ${AIONUI_NETWORKS:-openclaw-network}
